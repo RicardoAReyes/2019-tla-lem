@@ -50,6 +50,8 @@ Writes to `authority-xapi`.
 
 Interprets the completion-relevant statements and generates competency assertions based on that activity's definition in the Experience Index.  **There is no logic here**, it just attributes anything associated with that entry.
 
+This service isn't included in the `docker-compose.yml` file as it actually ran on our CaSS server.
+
 ### Goal Service ✔
 Reads from `resolved-xapi` and `authority-xapi`.
 
@@ -72,6 +74,13 @@ This technically has a web version, but it's done entirely with auto-generated E
 Small service built around [an NPM module](https://www.npmjs.com/package/tla-mom-proto) to assist with MOM compliance.
 
 This basically just lists MOM verbs and has a rudementary statement sender.
+
+### Other "Helpers" 🛠
+Additionally, we wrote two other "helpers" used for this which aren't included here:
+- a Keycloak helper (simplified queries about who's registered in the system)
+- a CaSS helper (framework queries and an endpoint for returning a cached entire framework graph)
+
+These don't actually do anything not exposed by the APIs of either Keycloak or CaSS, but the desire to cache and transform their regular API results led to these services.  Nothing here is particularly interesting, so they've been omitted.
 
 ### Nginx and Certbot
 Container routing and SSL generation.  
