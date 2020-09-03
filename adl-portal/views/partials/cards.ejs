@@ -1,0 +1,55 @@
+<div class="row justify-content-center">
+    <% let cardCount = 0 %>
+    <%  tabledata.forEach(function(entry) { %>
+    <div class="column">
+        <div class="card" style="width: 20rem; margin: 2rem;">
+            <div class="card-body">
+                <h5 class="card-title"><%= entry['description'] %></h5>
+                <h6 class="card-subtitle mb-2 text-muted"><%= entry['uuid'] %></h6>
+                <p class="card-text"><%= entry['handle'] %></p>
+                <a href="<%= entry['context'] %>" class="card-link">Activity Link</a>
+
+                <!--  -->
+                <!-- Open and populate update modal. -->
+                <a onclick="document.getElementById('<updatemodal><%= cardCount %>').style.display='block'"
+                    class="btn btn-default"><i class="fa fa-calendar-check-o"
+                        style="font-size:30px"></i></a>
+                <div id="<updatemodal><%= cardCount %>" class="w3-modal">
+                    <div class="w3-modal-content">
+                        <div class="w3-container">
+                            <!-- Modal Header -->
+                            <div class="modal-header">
+                                <!-- Button to exit modal by changing CSS. -->
+                                <button
+                                    onclick="document.getElementById('<updatemodal><%= cardCount %>').style.display='none'"
+                                    class="btn btn-default  ">&times;
+                                </button>
+                            </div>
+
+                            <!-- Modal body. -->
+
+                            <div class="modal-body">
+                                <button
+                                    onclick="xapiSchedule('<%= JSON.stringify(entry) %>'); document.getElementById('<updatemodal><%= cardCount %>').style.display='block'"
+                                    class="btn btn-default">Schedule Task
+                                </button>
+                            </div>
+
+                            <!-- Modal footer. -->
+                            <div class="modal-footer"></div>
+                        </div>
+                    </div>
+                </div>
+                <!--  -->
+            </div>
+        </div>
+    </div>
+    <% cardCount++ %>
+
+    <% }) %>
+
+    <!-- Keeping count of the length of entries.  -->
+    <param id="rowCount" name="rowCount" value="<%= tabledata.length %>">
+    <param id="colCount" name="colCount" value="<%= titles.length %>">
+
+</div>

@@ -1,0 +1,210 @@
+<!doctype html>
+<html lang="en">
+
+<!-- Page Title -->
+<title>Kafka Web Socket Example</title>
+
+<!-- Header -->
+<% include partials/header.ejs %>
+
+<body>
+
+    <hr>
+
+    <!-- Summary Container -->
+    <div class="service-table">
+
+        <!-- Header and general explanation -->
+        <p>
+            This page interfaces with a simle Kafka consumer to display all messages from all topics via WebSockets.
+            In addition to outages, you can use this page to confirm the cluster's functionality and diagnose issues.
+            The consumer powering this service has implemented a redundancy check, so no duplication should occur.
+        </p>
+
+        <hr>
+
+        <h4>Stream Log</h4>
+        <div class="bg-dark">
+            <p id="socket-output" class="text-light" style="padding: 20px; height: 500px; overflow-y: scroll; overflow-x: scroll">
+
+            </p>
+        </div>
+
+        <h4>Controls</h4>
+        <div class="btn-toolbar" role="toolbar" aria-label="Toolbar with button groups">
+            <button type="button" class="btn btn-secondary" id="reconnect-button">Reconnect</button>
+            <button type="button" class="btn btn-secondary" id="disconnect-button">Disconnect</button>
+
+            <div class="col-sm-3 my-1">
+                <div class="input-group">
+                    <div class="input-group-prepend">
+                        <div class="input-group-text">Displayed Messages: </div>
+                    </div>
+                    <input type="text" class="form-control" id="message-counter" placeholder="0" disabled>
+                </div>
+            </div>
+            <div class="col-sm-3 my-1">
+                <div class="input-group">
+                    <div class="input-group-prepend">
+                        <div class="input-group-text">Total Messages: </div>
+                    </div>
+                    <input type="text" class="form-control" id="message-counter-total" placeholder="0" disabled>
+                </div>
+            </div>
+            <button type="button" class="btn btn-secondary" id="clear-button">Clear Log</button>
+        </div>
+    </div>
+</body>
+
+<script>
+    // Get our log object
+    var output = document.getElementById("socket-output");
+    var reconnectButton = document.getElementById("reconnect-button");
+    var disconnectButton = document.getElementById("disconnect-button");
+    var clearButton = document.getElementById("clear-button");
+
+    var messageCounter = document.getElementById("message-counter");
+    var mesageCounterTotal = document.getElementById("message-counter-total");
+
+    // Keep track of our socket
+    var socket = null;
+    var messageTotal = 0;
+    var messageCount = 0;
+    var messageLimit = 1000;
+
+    var messageThrottle = 50;
+    var recentCount = 0;
+
+    // Button callbacks
+    reconnectButton.onclick = reconnect;
+    disconnectButton.onclick = disconnect;
+    clearButton.onclick = clear;
+
+    // Start by connecting
+    connect();
+
+    function appendLog(header, msg) {
+
+        let failure = header.indexOf("KAFKA FAILURE") >= 0;
+        let throttled = header.indexOf("throttle") >= 0;
+        let btnClass = "btn-primary"
+        let body = `${header}<hr>`
+
+        if (msg) {
+            if (failure) {
+                btnClass = "btn-danger btn-block"
+            } else if (throttled) {
+                btnClass = "btn-warning btn-block"
+            }
+
+            if (msg.startsWith("{") || msg.startsWith("[")) {
+                msg = JSON.stringify(JSON.parse(msg), null, 4)
+            }
+
+            body = `
+                <button class="btn ${btnClass}" type="button" data-toggle="collapse" data-target="#${header}" aria-expanded="false" aria-controls="${header}">
+                    ${header}
+                    <div class="collapse" id="${header}">
+                        <div class="card card-body bg-dark text-light text-left"><pre><code class="text-light">${msg}</code></pre></div>
+                    </div>
+                </button>
+            `
+        }
+
+        if ($ != undefined) {
+            $(output).append(`<span class="message">${body}</span>`)
+            updateCounter(++messageCount, ++messageTotal);
+
+            // Scroll down if necessary
+            output.scrollTop = output.scrollHeight;
+        }
+    }
+
+    function updateCounter(count, total) {
+        $(messageCounter).val(count);
+        $(mesageCounterTotal).val(total);
+    }
+
+    function connect() {
+
+        if (socket != undefined)
+            return;
+
+        // Get wherever we are now, minus the port
+        var path = window.location.pathname;
+        var address = window.location.origin.replace("http", "ws") + (path.endsWith("/") ? path : path + "/") + "kafka"
+
+        console.log(address);
+
+        // Create WebSocket connection.
+        socket = new WebSocket(address);
+
+        // Connection opened
+        socket.onopen = function (event) {
+            socket.send("<%= locals.password %>");
+        };
+
+        // Listen for messages
+        socket.onmessage = function (event) {
+            let firstBreak = event.data.indexOf("\n")
+            if (firstBreak >= 0) {
+
+                let header = event.data.substr(0, firstBreak);
+                let body = event.data.substr(firstBreak + 1, event.data.length - firstBreak - 1);
+
+                appendLog(header, body);
+
+            } else {
+                appendLog(event.data);
+            }
+        };
+
+        // Tell us when this is dead
+        socket.onclose = function (event) {
+            appendLog("[Socket closed!]");
+            socket = null;
+        };
+    }
+
+    function reconnect() {
+        if (socket != undefined) {
+            appendLog("Already connected!");
+        } else {
+            appendLog("Attempting connection ...");
+            connect();
+        }
+    }
+
+    function disconnect() {
+        if (socket != undefined) {
+            socket.close();
+            appendLog("Disconnected!");
+        }
+    }
+
+    function clear() {
+        output.textContent = '';
+        updateCounter(messageCount = 0, messageTotal);
+    }
+
+    // Periodically clear the old messages
+    setInterval(function () {
+
+        if ($ == undefined)
+            return;
+
+        // Check if we need to remove some things
+        if (messageCount > messageLimit) {
+            let excess = messageCount - messageLimit;
+            
+            $(`span.message:lt(${excess})`).remove();
+
+            messageCount -= excess;
+        }
+
+    }, 1000)
+</script>
+<!-- Footer -->
+<% include partials/footer.ejs %>
+
+</html>

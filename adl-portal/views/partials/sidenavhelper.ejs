@@ -1,0 +1,142 @@
+<style>
+    .padded {
+        padding-top: 2rem;
+    }
+
+    html {
+        scrollbar-color: #2e3951;
+        scrollbar-width: thin;
+        height: 100%;
+    }
+
+    body {
+        scrollbar-color: #2e3951;
+        scrollbar-width: thin;
+        height: 42rem;
+    }
+
+    body::-webkit-scrollbar {
+        width: 12px;
+    }
+
+    body::-webkit-scrollbar-track {
+        -webkit-box-shadow: inset 0 0 6px #2e3951;
+        border-radius: 10px;
+        background-color: #2e3951;
+    }
+
+    body::-webkit-scrollbar-thumb {
+        border-radius: 10px;
+        background-color: rgb(212, 121, 121);
+        -webkit-box-shadow: inset 0 0 6px rgba(90, 90, 90, 0.7);
+        background-image: linear-gradient(to top, #5ee7df 0%, #b490ca 100%);
+    }
+
+    /* The sidebar menu. */
+    .sidebar {
+        height: 100%;
+        /* 100% full height. */
+        width: 0;
+        /* 0 width - Change this with JavaScript. */
+        position: fixed;
+        /* Stay in place. */
+        z-index: 1;
+        /* Stay on top. */
+        top: 0;
+        left: 0;
+        background-color: #111;
+        /* Black */
+        overflow-x: hidden;
+        /* Disable horizontal scroll. */
+        /* padding-top: 6rem; */
+        margin-top: 8rem;
+        /* Place content 60px from the top. */
+        /* transition: 0.5s; */
+        /* 0.5 second transition effect to slide in the sidebar. */
+
+    }
+
+    /* The sidebar links. */
+    .sidebar a {
+        padding-top: 4px;
+        text-decoration: none;
+        font-size: medium;
+        color: #818181;
+        display: block;
+        /* transition: 0.3s; */
+    }
+
+    /* When you mouse over the navigation links, change their color. */
+    .sidebar a:hover {
+        color: #f1f1f1;
+    }
+
+    /* The button used to open the sidebar. */
+    .openbtn {
+        /* font-size: 20px; */
+        cursor: pointer;
+        /* background-color: inherit; */
+        color: white;
+        /* padding: 10px 15px; */
+        border: black;
+
+        z-index: 1000;
+    }
+
+    .openbtn:hover {
+        background-color: #444;
+    }
+
+    /* Style page content - Use this if you want to push the page content to the right when you open the side navigation. */
+    #main {
+        /* transition: margin-left .5s; */
+        /* If you want a transition effect. */
+        padding: 20px;
+    }
+
+    /* On smaller screens, where height is less than 450px, change the style of the sidenav.
+    (less padding and a smaller font size). */
+    @media screen and (max-height: 450px) {
+        .sidebar {
+            padding-top: 15px;
+        }
+
+        .sidebar a {
+            font-size: 18px;
+        }
+    }
+
+    @media screen and (min-height: 800px) {
+        body {
+            scrollbar-color: #2e3951;
+            scrollbar-width: thin;
+            height: 48rem;
+        }
+    }
+
+    a {
+        outline: 0;
+    }
+
+    button {
+        outline: 0;
+    }
+</style>
+
+<script>
+    /* Set the width of the sidebar to 250px and the left margin of the page content to 250px. */
+    function toggleNav() {
+
+        let temp = document.getElementById("mySidebar").style.width;
+
+        if (temp != "0%" && temp != 0) {
+            document.getElementById("mySidebar").style.width = "0%";
+            document.getElementById("main").style.marginLeft = "0";
+            document.getElementById("openbutton").innerHTML = `<i class="fas fa-angle-right"></i><i class="fas fa-angle-right"></i>`;
+        } else {
+            document.getElementById("mySidebar").style.width = "18rem";
+            document.getElementById("main").style.marginLeft = "18rem";
+            document.getElementById("openbutton").innerHTML = `<i class="fas fa-angle-left"></i><i class="fas fa-angle-left"></i>`;
+        }
+    }
+</script>

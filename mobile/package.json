@@ -1,0 +1,28 @@
+{
+    "name": "keycloak-db-helper",
+    "version": "1.0.0",
+    "description": "Example app to send data to Kafka.",
+    "main": "app.js",
+    "scripts": {
+        "start": "node app.js",
+        "test": "echo \"Error: No test specified.\" && exit 0"
+    },
+    "author": "",
+    "license": "ISC",
+    "dependencies": {
+        "axios": "^0.19.2",
+        "body-parser": "^1.19.0",
+        "btoa": "^1.2.1",
+        "core-js": "^2.6.10",
+        "cors": "^2.8.5",
+        "ejs": "^2.7.1",
+        "es6-promise": "^4.2.8",
+        "express": "^4.17.1",
+        "node-fetch": "^2.6.0",
+        "simple-kafka-consumer": "^0.0.5",
+        "simple-kafka-producer": "^0.0.5",
+        "simple-keycloak-adapter": "0.0.1",
+        "sqlite3": "^4.1.0",
+        "tla-mom-proto": "^0.12.4"
+    }
+}

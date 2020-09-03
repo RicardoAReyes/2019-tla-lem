@@ -1,0 +1,60 @@
+<iframe id="iframe" width="100%" height="100%"></iframe>
+<script>
+
+    if ("<%= frame %>" == "VLRC") {
+        document.getElementsByTagName("iframe")[0].setAttribute("src", "<%- vlrc %>");
+    } else if ("<%= frame %>" == "ARRM") {
+        document.getElementsByTagName("iframe")[0].setAttribute("src", "<%- arrm %>");
+    } else {
+        document.getElementsByTagName("iframe")[0].setAttribute("src", "<%= locals.dave %>");
+    }
+
+    window.addEventListener('message', (event) => {
+        console.log("I received a message from CaSS iframe.");
+        console.log(event);
+
+        if (event.data.event == "Ready") {
+            document.getElementById("iframe").contentWindow.postMessage(
+                { action: "identity", value: "<%= locals.actor.id %>" },
+                "*"
+            );
+            document.getElementById("iframe").contentWindow.postMessage(
+                { action: "LRSEnpoint", value: "<%= locals.lrs.endpoint %>" },
+                "*"
+            );
+            document.getElementById("iframe").contentWindow.postMessage(
+                { action: "LRSCred", value: "<%= locals.lrs.user %>" + ":" + "<%= locals.lrs.pass %>" },
+                "*"
+            );
+        } else if (event.data.event == "CompClick") {
+
+            window.location.replace("/portal/experiences?competency=" + encodeURIComponent(event.data.competency));
+
+            /*console.log("Clicked the comp.");
+            console.log(event);
+
+
+            fetch(`https://activities.somewhere.net/learningexperience?competency=${encodeURIComponent(event.data.competency)}`, {
+                credentials: 'same-origin'
+            })
+                .then((response) => { console.log(response); return response.json() })
+                .then(data => {
+
+                    console.log("Competency data received from CaSS iframe:");
+                    console.log(data);
+
+                    if (data.rows[0]) {
+                        addRelatedExperiences(data)
+                    } else {
+                        closeRelatedExperiences()
+                    }
+                    
+                })
+                .catch(error => {
+                    // alert("Problem retrieving goal info, check the console.");
+                    console.error(error);
+                })
+*/
+        }
+    }, false);
+</script>

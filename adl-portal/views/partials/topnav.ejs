@@ -1,0 +1,132 @@
+<!-- Get the current view role. -->
+<% let curRole = locals.view %>
+<%# let oicsList = ['Observer', 'Instructor', 'Controller', 'Supervisor'] %>
+
+<!-- If we don't have one, we need to get it from the learner profile. -->
+<% if (curRole === undefined) { %>
+<% if (locals.roles.includes("Admin")) { %>
+<% curRole = "Admin" %>
+<% } else if (locals.roles.includes("OICS")) { %>
+<% curRole = "OICS" %>
+<% } %>
+<% } %>
+
+<nav class="navbar navbar-expand navbar-dark light-blue darken-3 p-0 fixed-top">
+    <!-- style="height: 6rem" -->
+    <div class="col">
+        <div class="row z-depth-3 p-2 px-3">
+
+            <img src="<%= locals.root %>/images/adl.png" width="75" height="50" class="mr-2 align-self-center">
+            <h1 class="navbar-brand mx-2 mt-2 my-auto text-white" style="font-size: 30px;">TLA Portal</h1>
+            <h1 class="navbar-brand mx-4 mt-2 mr-auto my-auto text-white">
+                <a class="text-white" href="/portal">Home</a>
+            </h1>
+
+            <div class="dropdown mx-2 my-auto">
+                <a class="nav-link dropdown-toggle text-white my-auto w-100" id="dropdownRoles" data-toggle="dropdown"
+                    aria-haspopup="true" aria-expanded="false">
+                    <% if (curRole == "Admin") { %>
+                    <span class=>View Page as <%= locals.user.name %>: Admin</span>
+                    <% } else if (curRole == "OICS") { %>
+                    <span class=>View Page as <%= locals.user.name %>: OICS</span>
+                    <% } else { %>
+                    <span class=>View Page as <%= locals.user.name %>: Student</span>
+                    <% } %>
+                </a>
+
+                <div class="dropdown-menu">
+                    <% for (var i = 0; i < locals.roles.length; i++) { %>
+                    <a class="dropdown-item"
+                        href="<%= locals.root %>/view/<%= locals.roles[i] %>"><%= locals.roles[i] %></a>
+                    <% } %>
+                </div>
+            </div>
+
+            <!-- Dropdown primary -->
+            <div class="dropdown my-auto">
+                <!-- Trigger -->
+                <a class="nav-link dropdown-toggle text-white my-auto w-100" id="dropdownTLA" data-toggle="dropdown"
+                    aria-haspopup="true" aria-expanded="false">
+                    <span class="white-text"><i class="fas fa-cog"></i></span>
+                </a>
+
+                <div class="dropdown-menu dropdown-menu-right dropdown-primary">
+                    <!-- <a class="dropdown-item" href="<%= locals.dave %>" target="_blank">View Analytics</a> -->
+                    <a class="dropdown-item" href="<%= locals.root %>/logout">Sign Out</a>
+                </div>
+            </div>
+            <!-- Dropdown primary -->
+        </div>
+        <div class="row grey lighten-5 text-center z-depth-2">
+            <button class="openbtn rounded-pill light-blue darken-3 z-depth-1 align-self-center mx-2"
+                style="font-size: 24px;" id="openbutton" onclick="toggleNav()">
+                <i class="fas fa-angle-left"></i><i class="fas fa-angle-left"></i>
+            </button>
+            <div style="margin-left: 16rem"></div>
+            <% if (curRole == "OICS" || curRole == "Admin") { %>
+                <div class="dropdown my-auto border-left border-right">
+                    <a class="nav-link dropdown-toggle w-100" id="dropdownStudents" data-toggle="dropdown"
+                        aria-haspopup="true" aria-expanded="false">
+                        <span class="text-truncate">
+                            Student: <%= locals.actor.name %>
+                        </span>
+                    </a>
+    
+                    <div class="dropdown-menu">
+                        <% if (locals.students.length === 0) { %>
+                        <a class="dropdown-item" href="<%= locals.root %>/view/<%= locals.roles[i] %>">
+                            No students in this interest group.</a>
+                        <% } else { %>
+                        <a class="dropdown-item" href="<%= locals.root %>/student/<%= locals.user.id %>">
+                            Me
+                        </a>
+                        <hr>
+                        <% for (var i = 0; i < locals.students.length; i++) { %>
+                        <a class="dropdown-item" href="<%= locals.root %>/student/<%= locals.students[i].id %>">
+                            <%= locals.students[i].name %>
+                        </a>
+                        <% } %>
+                        <% } %>
+                    </div>
+                </div>
+            <% } %>
+            <div class="mr-auto"></div>
+            
+            <div>
+                <span class="text-light">Quick Links</span>
+                <a class="w3-bar-item w3-button w3-hover-none w3-border-white w3-bottombar w3-hover-border-blue w3-hover-text-blue mx-2"
+                    href="https://kafka.somewhere.net/profile/me"
+                    target="_blank">
+                    Learner Profile
+                    </a>
+                <a href="/portal/experiences"
+                    class="w3-bar-item w3-button w3-hover-none w3-border-white w3-bottombar w3-hover-border-blue w3-hover-text-blue mx-2
+                    <% if (frame == 'experiences') { %> selected-link <% } %>">
+                    Experiences
+                </a>
+                <% if (curRole == "OICS" || curRole == "Admin") { %>
+                <a id="ARRMLINK"
+                    class="w3-bar-item w3-button w3-hover-none w3-border-white w3-bottombar w3-hover-border-blue w3-hover-text-blue mx-2
+                    <% if (frame == 'ARRM') { %> selected-link <% } %>"
+                    onclick="toggleQuickLinks('ARRMLINK')">
+                    ARRM
+                </a>
+                <% } else { %>
+                <a id="ARRMLINK" hidden></a>
+                <% } %>
+                <a id="VLRCLINK"
+                    class="w3-bar-item w3-button w3-hover-none w3-border-white w3-bottombar w3-hover-border-blue w3-hover-text-blue mx-2
+                    <% if (frame == 'VLRC') { %> selected-link <% } %>"
+                    onclick="toggleQuickLinks('VLRCLINK')">
+                    CODIAC
+                </a>
+                <a id="DAVELINK" 
+                    class="w3-bar-item w3-button w3-hover-none w3-border-white w3-bottombar w3-hover-border-blue w3-hover-text-blue mx-2
+                    <% if (frame == 'DAVE') { %> selected-link <% } %>" 
+                    onclick="toggleQuickLinks('DAVELINK')">
+                    Analytics
+                </a>
+            </div>
+        </div>
+    </div>
+</nav>

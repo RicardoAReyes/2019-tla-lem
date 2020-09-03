@@ -1,0 +1,623 @@
+<script>
+
+    document.addEventListener('DOMContentLoaded', function() {
+        var element = $('meta[name="active-menu"]').attr('content');
+        $('#' + element).addClass('active');
+    });
+
+
+    /* Directs the page to the URL of the selected competency. */
+    function compSearch() {
+        var e = document.getElementById("selectcomp");
+        var comp = e.options[e.selectedIndex].value;
+
+        if (comp == "none") {
+            window.location.replace("/mobile/experiences");
+        } else {
+            window.location.replace("/mobile/experiences?competency=" + encodeURIComponent(comp));
+        }
+
+        return false;
+    }
+
+    // Set up wrapper.
+    let wrapper = ADL.XAPIWrapper;
+    wrapper.changeConfig({
+        "endpoint": "<%= locals.lrs.endpoint %>",
+        "auth": `Basic ${toBase64("<%= locals.lrs.user %>:<%= locals.lrs.pass %>")}`
+    });
+    wrapper.baseURI = "https://auth.somewhere.net";
+
+</script>
+
+<!-- All this style needs to be in another actual CSS file. -->
+<style>
+    .w3-container,
+    .w3-panel {
+        padding: 0.01em 16px;
+    }
+
+    .w3-modal {
+        z-index: 3;
+        display: none;
+        padding-top: 100px;
+        position: fixed;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        overflow: auto;
+        background-color: rgba(0, 0, 0, 0.4);
+    }
+
+    .w3-modal-content {
+        margin: auto;
+        background-color: #fff;
+        position: relative;
+        padding: 0;
+        outline: 0;
+        width: 600px;
+    }
+
+    .w3-display-topright {
+        position: absolute;
+        right: 0;
+        top: 0;
+    }
+</style>
+
+
+<!-- Combine into 1 script tag. -->
+<script>
+
+    async function xapiSchedule(datastring) {
+
+        // Set up statement.
+        var stmt = {
+            "actor": {
+                "account": {
+                    "name": "<%= locals.actor.id %>",
+                    "homePage": wrapper.baseURI
+                },
+                "objectType": "Agent"
+            },
+            "verb": {
+                "id": "https://w3id.org/xapi/tla/verbs/scheduled",
+                "display": {
+                    "en-US": "scheduled"
+                }
+            },
+            "object": {
+                "id": JSON.parse(datastring).handle,
+                "objectType": "Activity"
+            }
+        };
+
+        // Sends the wrapper to the LRS.
+        // console.log(JSON.stringify(stmt));
+        var resp = wrapper.sendStatement(stmt);
+
+        if (resp.xhr.status == "200") {
+            alert("Your task has been scheduled.")
+        } else {
+            alert("Sorry! That looks like it didn't work.")
+        }
+
+        // Reads the status of the sent file (any errors and their codes).
+        console.log("Sent: " + "[" + resp.id + "]: " + resp.xhr.status + " - " + resp.xhr.statusText);
+
+        // console.log("Resp:");
+        // console.log(JSON.stringify(resp));
+
+        // Pulls the statement back from the LRS.
+        var tempstmt = wrapper.getStatements({ "statementId": resp.id });
+
+        // Reads out what was pulled from the LRS.
+        // console.log("Pulled the statement back:");
+        console.log(JSON.stringify(tempstmt));
+    }
+
+    // Send "deselected" xAPI statement. objType should be "activity" or "competency"; "objID" should be "None" if this isn't a task.
+    async function xapiDeselect(objURI, objType, objID) {
+
+        // Set up statement.
+        var stmt = {
+            "actor": {
+                "account": {
+                    "name": "<%= locals.actor.id %>",
+                    "homePage": wrapper.baseURI
+                },
+                "objectType": "Agent"
+            },
+            "verb": {
+                "id": "https://w3id.org/xapi/tla/verbs/deselected",
+                "display": {
+                    "en-US": "deselected"
+                }
+            },
+            "object": {
+                "id": objURI,
+                "definition": {
+                    "type": "https://w3id.org/xapi/tla/activity-types/" + objType,
+                    "extensions": {
+                        "https://w3id.org/xapi/tla/extensions/instance": objID
+                    }
+                },
+                "objectType": "Activity"
+            }
+        };
+
+        // Sends the wrapper to the LRS.
+        var resp = wrapper.sendStatement(stmt);
+
+        if (resp.xhr.status == "200") {
+            alert("Item deselected successfully.");
+        } else {
+            alert("Sorry! That looks like it didn't work.");
+        }
+
+        // Reads the status of the sent file (any errors and their codes).
+        console.log("Sent: " + "[" + resp.id + "]: " + resp.xhr.status + " - " + resp.xhr.statusText);
+
+        // Pulls the statement back from the LRS.
+        var tempstmt = wrapper.getStatements({ "statementId": resp.id });
+
+        // Reads out what was pulled from the LRS.
+        console.log(JSON.stringify(tempstmt));
+    }
+
+    /* document.addEventListener('DOMContentLoaded', function () {
+        fetchTLAData("https://kafka.somewhere.net/profile/me?secret=<%= secret %>&user=<%= locals.actor.id %>", "#userGoals");
+        fetchTLAData("https://kafka.somewhere.net/profile/me?secret=<%= secret %>&user=<%= locals.actor.id %>", "#learnerTasks");
+        buildLearnerEvents(null);
+
+        $("#collapseEvents").collapse("show");
+    }) */
+
+    // This function calls the first URLs and then switches to goals, tasks, or events. Just know they get called here.
+    function fetchTLAData(path, target) {
+
+        fetch(path)
+        .then(response => response.json())
+        .then(data => {
+            switch (target) {
+                case "#userGoals":
+                    buildUserGoals(data);
+                    break;
+
+                case "#learnerTasks":
+                    buildLearnerTasks(data);
+                    break;
+
+                case "launch":
+                    return launchContent(data.rows);
+                    break;
+            }
+        })
+        .catch(error => {
+            alert("Problem getting records, check the console.");
+            console.error(error);
+        })
+    }
+
+    // Populates goals and competencies from LP.
+    function buildUserGoals(records) {
+
+        var userGoalsList = document.getElementById("myGoals");
+        var userCompetencyList = document.getElementById("myCompetency");
+
+        // Get individual goal from user's goal list.
+        records.goals.forEach(function(record) {
+
+            // Pull goal info from CaSS.
+            let path = "https://cass.somewhere.net/helper/api/competencies?id=" + record.goal;
+
+            if (path.includes("schema.cassproject.org"))
+            {
+                fetch(path, {
+                    credentials: 'same-origin'
+                })
+                .then(response => response.json())
+                .then(data => {
+
+                    // Check the structure of the name field.
+                    if (Array.isArray(data.name)) {
+                        let validNameObj = data.name.find(nameObj => nameObj["@value"] != undefined);
+                        if (validNameObj)
+                            data.name = validNameObj["@value"];
+                    }
+
+                    let newListItem = document.createElement("div");
+
+                    let newLink = document.createElement("button");
+                    newLink.setAttribute("data-toggle", "modal");
+                    newLink.setAttribute("data-target", "#detailsModal");
+                    newLink.onclick = function() {
+
+                        // Make card for this goal.
+                        populateDetailsPanel(data, null); /* No added competency badge. */
+
+                        let container = document.getElementById("detailsModalBody");
+
+                        let relatedButton = document.createElement("a");
+                        relatedButton.className = "btn text-white mdb-color darken-3 w-75 p-1";
+                        relatedButton.href = "/portal/experiences?competency=" + encodeURIComponent(record.goal);
+                        relatedButton.target = "_self";
+                        relatedButton.innerText = "View Related Tasks";
+
+                        container.append(relatedButton);
+
+                        // fetch(`https://activities.somewhere.net/learningexperience?competency=${encodeURIComponent(record.goal)}`, {
+                        //     credentials: 'same-origin'
+                        // })
+                        // .then((response) => { console.log(response); return response.json() })
+                        // .then(data => {
+
+                        //     console.log("Competency data received from goal section:");
+                        //     console.log(data);
+                        //     if (data.rows[0]) {
+                        //         addRelatedExperiences(data);
+                        //     } else {
+                        //         closeRelatedExperiences();
+                        //     }
+
+                        // })
+                        // .catch(error => {
+                        //     alert("Problem retrieving goal info, check the console.");
+                        //     console.error(error);
+                        // })
+                    }
+
+                    newLink.innerText = data.name;
+                    newLink.className = "btn light-blue darken-4 text-white w-75 p-2 mb-0";
+                    newListItem.append(newLink);
+
+                    let deselectButton = buildDeselectButton(data.id, "competency", "None");
+                    newListItem.append(deselectButton);
+
+                    userGoalsList.append(newListItem);
+                })
+                .catch(error => {
+                    console.error(error);
+                })
+            }
+        });
+
+        records.competencies.forEach(function (competency) {
+
+            // Pull goal info from CaSS.
+            let path = "https://cass.somewhere.net/helper/api/competencies?id=" + competency.competencyID;
+
+            if (path.includes("schema.cassproject.org"))
+            {
+                fetch(path, {
+                    credentials: 'same-origin'
+                })
+                .then(response => response.json())
+                .then(data => { // Create cards for competencies.
+
+                    // Check the structure of the name field.
+                    if (Array.isArray(data.name)) {
+                        let validNameObj = data.name.find(nameObj => nameObj["@value"] != undefined);
+                        if (validNameObj)
+                            data.name = validNameObj["@value"];
+                    }
+
+                    let newListItem = document.createElement("div");
+
+                    let newLink = document.createElement("button");
+                    newLink.setAttribute("data-toggle", "modal");
+                    newLink.setAttribute("data-target", "#detailsModal");
+                    newLink.onclick = function () {
+                        populateDetailsPanel(data, competency.confidence)
+                    }
+
+                    newLink.innerHTML = data.name + `<span class="badge teal accent-4 ml-2">${competency.confidence * 100}%</span>`;
+                    newLink.className = "btn light-blue darken-4 text-white w-75 p-2 mb-0";
+                    newListItem.append(newLink);
+                    userCompetencyList.append(newListItem);
+                })
+                .catch(error => {
+                    console.error(error);
+                })
+            }
+        });
+    }
+
+    // Populates learner tasks from LP.
+    function buildLearnerTasks(records) {
+
+        var userTasksList = document.getElementById("myTasks");
+        let completed = "<%= locals.completed %>";
+
+        records.tasks.forEach(function(record) {
+
+            fetch(record.uri, {
+                credentials: 'same-origin'
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (Array.isArray(data.rows) && data.rows.length) {
+                        let newListItem = document.createElement("div");
+
+                        let newLink = document.createElement("button");
+                        newLink.setAttribute("data-toggle", "modal");
+                        newLink.setAttribute("data-target", "#detailsModal");
+                        newLink.onclick = function () {
+                            populateDetailsPanel(data.rows[0], null); /* No added competency badge. */
+                            buildLearnerEvents(record.uri);
+                        }
+
+                        newLink.innerText = data.rows[0].description;
+                        newLink.className = "btn light-blue darken-4 text-white w-75 p-2 mb-0";
+
+                        if (completed.includes(record.uri)) {
+                            let newSpan = document.createElement("span");
+                            newSpan.innerText = "Completed";
+                            newSpan.className = "badge teal accent-4 ml-2";
+                            newLink.append(newSpan);
+                        }
+
+                        newListItem.append(newLink);
+
+                        let deselectButton = buildDeselectButton(record.uri, "activity", record.id);
+                        newListItem.append(deselectButton);
+
+                        userTasksList.append(newListItem);
+                    }
+                })
+                .catch(error => {
+                    // alert("Problem retrieving goal info, check the console.");
+                    console.error(error);
+                })
+        });
+    }
+
+    // Populates learner events from LP.
+    function buildLearnerEvents(highlight) {
+
+        let userEventsList = document.getElementById("myEvents");
+        let records = JSON.parse('<%- JSON.stringify(locals.events) %>');
+
+        // Clear the Events list in case we're updating it in real time.
+        while (userEventsList.firstChild) {
+            userEventsList.removeChild(userEventsList.lastChild);
+        }
+
+        records.forEach(function(record) {
+
+            fetch(record.object.id, {
+                credentials: 'same-origin'
+            })
+                .then(response => response.json())
+                .then(data => {
+                    let newListItem = document.createElement("div");
+                    let eventTarget = "";
+
+                    if (Array.isArray(data.rows) && data.rows.length)
+                        eventTarget = data.rows[0].description;
+                    else if (Array.isArray(data.name)) {
+                        let validNameObj = data.name.find(nameObj => nameObj["@value"] != undefined);
+                        if (validNameObj)
+                            eventTarget = validNameObj["@value"];
+                    }
+                    else
+                        eventTarget = "Missing";
+
+                    let newLink = buildEventDetailsModalButton(eventTarget, record.verb.display["en-US"], record.stored, highlight);
+                    if (highlight && highlight == record.object.id)
+                        newLink.className = "btn success-color-dark text-white w-75 p-2 mb-0";
+
+                    newListItem.append(newLink);
+                    userEventsList.append(newListItem);
+                })
+                .catch(error => {
+                    // alert("Problem retrieving goal info, check the console.");
+                    console.error(error);
+                })
+        });
+    }
+
+    function launchContent(data) {
+
+        let strContent = "";
+
+        data.forEach(function (record) {
+            record.content.forEach(function (rec) {
+                strContent = rec;
+            })
+        })
+
+        window.open(strContent, "_blank");
+    }
+
+    // Takes data about learning experiences, populates the related activities column, and changes the CSS to make it viewable.
+    function addRelatedExperiences(data) {
+
+        console.log("In addRelatedExperiences.");
+        console.log(data);
+        let container = document.getElementById("relatedActivitiesContainer");
+
+        while (container.firstChild) {
+            container.removeChild(container.lastChild);
+        }
+
+        container.innerHTML = `<i class='fa fa-times p-3' onclick='closeRelatedExperiences()' aria-hidden='true' style='position: absolute; top: 0; right: 0;' ></i>`
+
+        // This span only just creates the title for the Related Experiences.
+        let title = document.createElement("span");
+        title.className = "text-center";
+        title.innerHTML = "<h6>Related Tasks</h6>";
+
+        container.append(title)
+        container.className = "col-lg-2 light-blue lighten-5 w-100 p-2";
+
+        let workstation = document.getElementById("workstation") // Clear related activities column.
+        workstation.className = "col-lg-10 col-md-8 align-items-center";
+
+        data.rows.forEach(experience => {
+
+            let newRow = document.createElement("div");
+            newRow.className = "row justify-content-center m-2";
+
+            let newLink = document.createElement("button");
+            newLink.setAttribute("data-toggle", "modal");
+            newLink.setAttribute("data-target", "#detailsModal");
+            newLink.onclick = function () {
+                populateDetailsPanel(experience, null); /* No competency confidence here. */
+            }
+
+            newLink.innerText = experience.description;
+            newLink.className = "btn light-blue darken-4 text-white w-75 p-1 mb-0";
+
+            newRow.append(newLink);
+            container.append(newRow);
+        });
+    }
+
+    function closeRelatedExperiences() {
+        console.log("Close related experiences.")
+        let workstation = document.getElementById("workstation")
+        workstation.className = "col-lg-12 col-md-10 align-items-center";
+
+        let container = document.getElementById("relatedActivitiesContainer");
+        container.className = "";
+        // Clear related activities column.
+        while (container.firstChild) {
+            container.removeChild(container.lastChild);
+        }
+    }
+
+    function clearDetailsPanel() {
+        let taskContainer = document.getElementById('detailsPanel');
+        while (taskContainer.firstChild) {
+            taskContainer.removeChild(taskContainer.lastChild);
+        }
+
+        taskContainer.className = "col p-1 h-50";
+    }
+
+    function toggleQuickLinks(page) {
+
+        document.getElementById("VLRCLINK").classList.remove("selected-link")
+        document.getElementById("DAVELINK").classList.remove("selected-link")
+        document.getElementById("ARRMLINK").classList.remove("selected-link")
+
+        console.log("Link!")
+        console.log(page)
+
+        switch (page) {
+            case "VLRCLINK":
+                location.replace('/portal?frame=VLRC');
+                document.getElementById("VLRCLINK").classList.add("selected-link");
+                break;
+            case "DAVELINK":
+                location.replace('/portal?frame=DAVE');
+                document.getElementById("DAVELINK").classList.add("selected-link");
+                break;
+            case "ARRMLINK":
+                location.replace('/portal?frame=ARRM');
+                document.getElementById("ARRMLINK").classList.add("selected-link");
+                break;
+            default:
+                location.replace('/portal')
+        }
+    }
+
+    function launchToast(toaststr) {
+        var x = document.getElementById("snackbar");
+        x.className = "show";
+        x.innerText = toaststr;
+        setTimeout(function() { x.className = x.className.replace("show", ""); }, 3000);
+    }
+
+</script>
+
+<style>
+    .selected-link {
+        border-color: #2196F3 !important;
+        color: #2196F3 !important;
+    }
+
+    .landingpage {
+        background-image: url("<%= locals.root %>/images/portal.jpg");
+        background-color: #cccccc;
+        height: 100%;
+        /* You must set a specified height. */
+        background-position: center;
+        /* Center the image. */
+        background-repeat: no-repeat;
+        /* Do not repeat the image. */
+        background-size: cover;
+    }
+
+    #snackbar {
+        visibility: hidden;
+        min-width: 250px;
+        margin-left: -125px;
+        background-color: #333;
+        color: #fff;
+        text-align: center;
+        border-radius: 2px;
+        padding: 16px;
+        position: fixed;
+        z-index: 1;
+        left: 50%;
+        bottom: 30px;
+        font-size: 17px;
+    }
+
+    #snackbar.show {
+        visibility: visible;
+        -webkit-animation: fadein 0.5s, fadeout 0.5s 2.5s;
+        animation: fadein 0.5s, fadeout 0.5s 2.5s;
+    }
+
+    @-webkit-keyframes fadein {
+        from {
+            bottom: 0;
+            opacity: 0;
+        }
+
+        to {
+            bottom: 30px;
+            opacity: 1;
+        }
+    }
+
+    @keyframes fadein {
+        from {
+            bottom: 0;
+            opacity: 0;
+        }
+
+        to {
+            bottom: 30px;
+            opacity: 1;
+        }
+    }
+
+    @-webkit-keyframes fadeout {
+        from {
+            bottom: 30px;
+            opacity: 1;
+        }
+
+        to {
+            bottom: 0;
+            opacity: 0;
+        }
+    }
+
+    @keyframes fadeout {
+        from {
+            bottom: 30px;
+            opacity: 1;
+        }
+
+        to {
+            bottom: 0;
+            opacity: 0;
+        }
+    }
+</style>

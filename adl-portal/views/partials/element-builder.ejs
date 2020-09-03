@@ -1,0 +1,116 @@
+<script>
+    function buildDeselectButton(uri, str, id) {
+
+        let temp = document.createElement("button");
+        temp.onclick = function() {
+            xapiDeselect(uri, str, id);
+        }
+        temp.innerHTML = '<i class="fas fa-times"></i>';
+        temp.className = "btn rounded-circle light-blue darken-4 text-white p-2 mb-0";
+
+        return temp;
+    }
+    
+    function buildEventDetailsModalButton(task, verb, time, highlight) {
+
+        let temp = document.createElement("button");
+        temp.setAttribute("data-toggle", "modal");
+        temp.setAttribute("data-target", "#detailsModal");
+        temp.onclick = function () {
+
+            let eventDetails = document.getElementById("detailsModalBody");
+
+            // Clear modal.
+            while (eventDetails.firstChild) {
+                eventDetails.removeChild(eventDetails.lastChild);
+            }
+
+            let detailsTable = document.createElement("table");
+            detailsTable.className = "table table-bordered";
+            let detailsTableBody = document.createElement("tbody");
+
+            let taskRow = buildDetailsRow("Task", task);
+            let verbRow = buildDetailsRow("Verb", verb);
+            let timeRow = buildDetailsRow("Recorded", time);
+
+            detailsTableBody.append(taskRow);
+            detailsTableBody.append(verbRow);
+            detailsTableBody.append(timeRow);
+
+            detailsTable.append(detailsTableBody);
+            eventDetails.append(detailsTable);
+        }
+
+        temp.innerText = task;
+        temp.className = "btn light-blue darken-4 text-white w-75 p-2 mb-0";
+
+        let newSpan = document.createElement("span");
+        newSpan.innerText = verb;
+        newSpan.className = "badge teal accent-4 ml-2";
+        temp.append(newSpan);
+
+        return temp;
+    }
+
+    function buildDetailsRow(title, data)
+    {
+        let newRow = document.createElement("tr");
+
+        let rowTitle = document.createElement("th");
+        rowTitle.setAttribute("scope", "row");
+        rowTitle.innerText = title;
+
+        let rowData = document.createElement("td");
+        rowData.innerText = data;
+
+        newRow.append(rowTitle);
+        newRow.append(rowData);
+
+        return newRow;
+    }
+
+    // Takes data from fetch requests and populates the Details panel. - Added the competency var for goals card in the Details panel.
+    function populateDetailsModal(data, conf) {
+
+        let container = document.getElementById("detailsModalBody");
+
+        // Clear Related Activities column.
+        while (container.firstChild) {
+            container.removeChild(container.lastChild);
+        }
+
+        let nameTag = document.createElement("p");
+        if (data.name)
+            nameTag.innerText = "Goal: " + data.name;
+        
+        container.append(nameTag);
+
+        // Only add the confidence badge on earned competencies not goals.
+        let confidenceTag = document.createElement("p");
+        if (conf)
+            confidenceTag.innerHTML = `Competency Confidence: <span class="badge teal accent-4 ml-2">${conf * 100}%</span>`;
+
+        container.append(confidenceTag);
+
+        let descriptionTag = document.createElement("p");
+        if (data.description)
+            descriptionTag.innerText = "Description: " + data.description
+        
+        container.append(descriptionTag);
+
+        // Add launch button if it's a task.
+        let launchButton = document.createElement("a");
+        if (Array.isArray(data.contentlist) && data.contentlist.length) {
+            launchButton.className = "btn text-white mdb-color darken-3 w-75 p-1";
+            launchButton.href = data.contentlist[0];
+            launchButton.target = "_blank";
+            launchButton.innerText = "Launch";
+        }
+        else if (data.description) {
+            launchButton.innerText = "No Content";
+            launchButton.className = "btn text-white mdb-color darken-3 w-75 p-1 disabled";
+        }
+
+        container.append(launchButton);
+    }
+</script>

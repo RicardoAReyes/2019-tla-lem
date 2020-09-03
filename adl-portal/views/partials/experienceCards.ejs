@@ -1,0 +1,100 @@
+<!-- Events Panel -->
+<!-- Search bar and select buttons. -->
+<div class="row mt-5">
+    <div class="mx-auto text-center">
+        <label>Filter by Competency:&nbsp;</label>
+        <select id="selectcomp" class="browser-default custom-select w-50">
+            <option value="none"></option>
+            <% for (let [key, value] of Object.entries(comps.compLabels)) { %>
+            <option value='<%= value %>' <% if(value == competency){ %> selected <% } %> > <%= key %> </option>
+            <% }%>
+        </select>
+        <button class="btn btn-secondary" onclick="compSearch()">
+            <i class="fas fa-filter"></i>
+        </button>
+    </div>
+</div>
+<!-- Generated table. -->
+<div class="row justify-content-center">
+    <% let cardCount = 0 %>
+    <% tabledata.forEach(function(entry) { %>
+    <div class="column">
+        <div class="card" style="width: 20rem; margin: 2rem;">
+            <div class="card-body">
+                <h5 class="card-title text-center"><%= entry['description'] %></h5>
+
+                <div class="row justify-content-center">
+                    <!-- Launch experiences from cards. -->
+                    <a href="<%= entry.contentlist[0] %>" target="_blank" id='launchbutton<%= cardCount %>' class="btn btn-default font-weight-bold">
+                        Launch
+                    </a>
+
+                    <script>
+                        // document.getElementById("launchbutton<%= cardCount %>").onclick = function () {
+
+                        //     fetch('<%= entry.contentlist[0] %>', {
+                        //         credentials: 'same-origin'
+                        //     })
+                        //     .then(response => response.json())
+                        //     .then((newdata) => {
+                        //         window.open(newdata.rows[0].content[0])
+                        //     })
+                        //     .catch();
+                        // }
+                    </script>
+
+                    <!-- Using stingify in the EJS tags to print regular JSON in rendered HTML to then be stringified into clipboard. -->
+                    <!-- <button
+                        onclick="navigator.clipboard.writeText('<%- entry.handle %>'); launchToast('Copied &quot;<%- entry.description %>&quot; metadata URL.')"
+                        class="btn btn-default p-2" style="font-size: 20px">
+                        <i class="fas fa-clipboard-check"></i>
+                    </button> -->
+
+                    <!-- Open and populate update modal. -->
+                    <button class="btn btn-default p-2" style="font-size: 20px" data-toggle="modal"
+                        data-target="#updatemodal<%= cardCount %>">
+                        <i class="fas fa-calendar-alt"></i>
+                    </button>
+
+                    <!-- Beginning modal. -->
+                    <div id="updatemodal<%= cardCount %>" class="modal" role="dialog">
+                        <div class="modal-dialog modal-dialog-centered" role="document">
+                            <div class="modal-content">
+                                <div class="w3-container">
+                                    <!-- Modal Header -->
+                                    <!-- <div class="modal-header"></div> -->
+
+                                    <!-- Modal body. -->
+                                    <div class="modal-body">
+                                        Would you like to schedule the "<%= entry['description'] %>" experience?
+                                    </div>
+
+                                    <!-- Modal footer. -->
+                                    <div class="modal-footer justify-content-center">
+                                        <button
+                                            onclick="xapiSchedule('<%= JSON.stringify(entry) %>')"
+                                            class="btn btn-default">
+                                            Schedule Task
+                                        </button>
+                                        <button class="btn btn-default" data-dismiss="modal">
+                                            Go Back
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!-- End of second button row. -->
+            </div>
+        </div>
+    </div>
+    <% cardCount++ %>
+
+    <% }) %>
+
+    <!-- Keeping count of the length of entries.  -->
+    <param id="rowCount" name="rowCount" value="<%= tabledata.length %>">
+    <param id="colCount" name="colCount" value="<%= titles.length %>">
+
+</div>

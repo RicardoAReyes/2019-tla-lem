@@ -1,0 +1,308 @@
+<body>
+
+    <hr>
+
+    <!-- Nav tabs -->
+    <ul class="nav nav-tabs md-tabs nav-justified primary-color padded" role="tablist">
+        <li class="nav-item">
+            <a class="nav-link active" data-toggle="tab" href="#panelGoals" role="tab">
+                <i class="fas fa-trophy pr-2"></i>Goals
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" data-toggle="tab" href="#panelTasks" role="tab">
+                <i class="fas fa-vote-yea pr-2"></i>Tasks
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" data-toggle="tab" href="#panelEvents" role="tab">
+                <i class="far fa-list-alt pr-2"></i>Events
+            </a>
+        </li>
+    </ul>
+    <!-- Nav tabs -->
+    
+    <!-- Tab panels -->
+    <div class="tab-content">
+    
+        <!-- Goals Panel -->
+        <div class="tab-pane fade in show active m-5" id="panelGoals" role="tabpanel">
+            
+            <p class="m-2">
+                Your goal list:
+            </p>
+
+            <div id="userGoals" class="btn-group d-flex flex-wrap justify-content-center"></div>
+
+            <script>
+                let buildUserGoals = (records) => {
+
+                    $("#userGoals").empty();
+
+                    // Get individual goal from user's goal list.
+                    records.goals.forEach(function(record) {
+                        
+                        // Pull goal info from CaSS.
+                        if (record.goal.includes("credentialengineregistry.org"))
+                        {
+                            let path = "https://cass.somewhere.net/helper/api/competencies?id=" + record.goal;
+                        
+                            fetch(path, {
+                                credentials: 'same-origin'
+                            })
+                            .then(response => response.json())
+                            .then(data => {
+                                if (!jQuery.isEmptyObject(data))
+                                    buildButton(data.name, null, "#userGoals", record.status);
+                            })
+                            .catch(error => {
+                                // alert("Problem retrieving goal info, check the console.");
+                                console.error(error);
+                            })
+                        }
+                    });
+                }
+            </script>
+
+            <p class="m-2">
+                Goals in your competency framework:
+            </p>
+
+            <div id="availableRecords" class="btn-group d-flex flex-wrap justify-content-center"></div>
+            
+            <script>
+                let buildGoalList = (records) => {
+
+                    $("#availableRecords").empty();
+
+                    // First get full framework list.
+                    for (let record of records) {
+            
+                        // Then get each competency ID.
+                        record.competencies.forEach(function(id) {
+                            
+                            // Search for full competency info by ID.
+                            let path = "https://cass.somewhere.net/helper/api/competencies?id=" + id;
+                            
+                            fetch(path, {
+                                credentials: 'same-origin',
+                            })
+                            .then(response => response.json())
+                            .then(data => {
+                                buildButton(data.name, data.id, "#availableRecords", data.description);
+                            })
+                            .catch(error => {
+                                alert("Problem retrieving competency info, check the console.");
+                                console.error(error);
+                            })
+                        });
+                    }
+                }
+            </script>
+
+            <div id="goalDesc" class="text-center m-5"></div>
+
+            <%- include("partials/goal-xapi.ejs", {
+                    submit: "Set Goal", 
+                    include: {
+                        objID: true
+                    }
+            }) %>
+
+        </div>
+        <!-- Goals Panel -->
+    
+        <!-- Tasks Panel -->
+        <div class="tab-pane fade m-5" id="panelTasks" role="tabpanel">
+
+            <table class="table">
+                <thead class="indigo white-text">
+                  <tr>
+                    <th scope="col">Task Name</th>
+                    <th scope="col">URI</th>
+                    <th scope="col">Status</th>
+                    <th scope="col">Content Link</th>
+                  </tr>
+                </thead>
+                <tbody id="learnerTaskTable">
+                  <!-- <tr>
+                    <th scope="row">1</th>
+                    <td>Mark</td>
+                    <td>Otto</td>
+                  </tr>
+                  <tr>
+                    <th scope="row">2</th>
+                    <td>Jacob</td>
+                    <td>Thornton</td>
+                  </tr>
+                  <tr>
+                    <th scope="row">3</th>
+                    <td>Larry</td>
+                    <td>the Bird</td>
+                  </tr> -->
+                </tbody>
+              </table>
+
+            <a href="https://kafka.somewhere.net/profile/me"
+                role="button" class="btn btn-block m-2 <%= locals.style ? locals.style : 'btn-success' %>">
+                My Tasks
+            </a>
+
+            <%- include("partials/task-xapi.ejs", {
+                submit: "Perform Task", 
+                include: {
+                    objID: true
+                }
+            }) %>
+
+        </div>
+        <!-- Tasks Panel -->
+
+        <!-- Events Panel -->
+        <div class="tab-pane fade m-5" id="panelEvents" role="tabpanel">
+    
+            <iframe src="/portal/experiences" class="w-100" height="600"></iframe>
+
+            <a href="/portal/experiences"
+                role="button" class="btn btn-block m-2 <%= locals.style ? locals.style : 'btn-success' %>">
+                    View Experience Index
+            </a>
+
+            <br>
+            
+            <%- include("partials/xi-form.ejs", {
+                    submit: "Get Experiences"
+            }) %>
+        
+        </div>
+        <!-- Events Panel -->
+    
+    </div>
+    <!-- Tab panels -->
+    
+    <div class="container">
+
+        <hr>
+        
+        <div class="col-mid-2">
+            <!-- Goals -->
+            <!-- <button id="mainGoals" class="btn btn-primary btn-lg btn-block" type="button" data-toggle="collapse" data-target="#mainGoalsCard">Goals</button>
+
+            <div id="mainGoalsCard" class="my-2 collapse">
+                <div class="card card-body">
+                    <a href="https://cass.somewhere.net/helper/api/competencies?framework=https://credentialengineregistry.org/resources/ce-2b824fc9-954a-11e8-b852-782bcb5df6ac"
+                        role="button" class="btn btn-block m-2 <%= locals.style ? locals.style : 'btn-success' %>">
+                        Available Goals
+                    </a>
+                    <p class="m-2">
+                        Your goal list:
+                    </p>
+
+                    <div id="userGoals" class="btn-group justify-content-center flex-wrap"></div>
+
+                    <p class="m-2">
+                        Your priority goal:
+                    </p>
+
+                    <div id="learnerPriority" class="btn-group justify-content-center flex-wrap"></div>
+
+                    <script>
+
+                        let buildUserGoals = (records) => {
+
+                            $("#userGoals").empty();
+
+                            // Get individual goal from user's goal list.
+                            records.goals.forEach(function(record) {
+                                
+                                // Pull goal info from CaSS.
+                                let path = "https://cass.somewhere.net/helper/api/competencies?id=" + record.goal;
+                                
+                                fetch(path, {
+                                    credentials: 'same-origin'
+                                })
+                                .then(response => response.json())
+                                .then(data => {
+                                    if (!jQuery.isEmptyObject(data))
+                                        buildButton(data.name, null, "#userGoals", record.status);
+                                })
+                                .catch(error => {
+                                    // alert("Problem retrieving goal info, check the console.");
+                                    console.error(error);
+                                })
+                            });
+                        }
+
+                    </script>
+
+                    <p class="mt-4 mb-2">
+                        Click below to see the full list of available goals from your competency framework:
+                    </p>
+                    
+                    <p class="m-2">
+                        Goals in your competency framework:
+                    </p>
+
+                    <div id="availableRecords" class="btn-group justify-content-center flex-wrap"></div>
+
+                    <script>
+    
+                        let buildGoalList = (records) => {
+    
+                            $("#availableRecords").empty();
+    
+                            // First get full framework list.
+                            for (let record of records) {
+                    
+                                // Then get each competency ID.
+                                record.competencies.forEach(function(id) {
+                                    
+                                    // Search for full competency info by ID.
+                                    let path = "https://cass.somewhere.net/helper/api/competencies?id=" + id;
+                                    
+                                    fetch(path, {
+                                        credentials: 'same-origin',
+                                    })
+                                    .then(response => response.json())
+                                    .then(data => {
+                                        buildButton(data.name, data.id, "#availableRecords", data.description);
+                                    })
+                                    .catch(error => {
+                                        alert("Problem retrieving competency info, check the console.");
+                                        console.error(error);
+                                    })
+                                });
+                            }
+                        }
+    
+                    </script>
+                </div>
+            </div> -->
+
+            <br>
+
+            <script>
+                let buildLearnerTasks = (records) => {
+
+                    $("#learnerTasks").empty();
+
+                    records.tasks.forEach(function(record) {
+
+                        // buildButton(record.uri, record.uri, "#learnerTasks", "setupContent");
+                        // $("#learnerTasks").append('<span class="m-2">' + record.status + '</span>');
+                        // $("#learnerTasks").append("<br>");
+
+                        buildTableRow("#learnerTaskTable", record.uri, record.uri, record.status);
+                    });
+                }
+            </script>
+
+        </div>
+
+        <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                fetchTLAData("https://kafka.somewhere.net/profile/me?secret=<%= secret %>&user=<%= locals.user.id %>", "#userGoals");
+                fetchTLAData("https://cass.somewhere.net/helper/api/frameworks/full", "#availableRecords");
+                fetchTLAData("https://kafka.somewhere.net/profile/me?secret=<%= secret %>&user=<%= locals.user.id %>", "#learnerTasks");
+            })
+        </script>

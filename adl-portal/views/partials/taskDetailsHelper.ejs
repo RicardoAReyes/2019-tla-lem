@@ -1,0 +1,48 @@
+<script>
+    let xiPath = "https://activities.somewhere.net/learningexperience"
+</script>
+
+<div class="bg-light w-100 text-justify text-center">
+    <div class="row text-wrap mx-0">
+        <span class="badge badge-primary w-100 pt-2">
+            <h4><i class="fas fa-receipt"></i>&nbsp;&nbsp;Details</h4>
+        </span>
+        <div class="row w-100 m-2">
+            <h5>Name: <%= name %></h5></br>
+        </div>
+        <div class="row w-100 m-2">
+            <h5>Description: <%= description %></h5></br>
+        </div>
+        <!-- Related Experiences -->
+        <div class="row w-100 mx-0">
+            <div class="col w-100 mx-0">
+                <h5>Required Material</h5>
+                <% console.log(materials) %>
+                <% materials.forEach(item => { %>
+                    <p><%= item %></p>
+                <% }) %>
+            </div>
+            <div class="col w-100 mx-0">
+                <h5>Required Competencies</h5>
+                <% relatedComp.forEach(item => { %>
+                    <p><%= item.competency %></p>
+                <% }) %>
+            </div>
+        </div>
+        <div class="row mx-0">
+
+            <!-- Add logic to this button to launch task. -->
+            <button type="button" class="btn btn-outline-primary" id="launchTask">
+                Launch
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        $("#launchTask").click(function() {
+            fetchTLAData("<%= materials[0] %>", "launch");
+        })
+    })
+</script>
