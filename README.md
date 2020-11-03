@@ -37,7 +37,7 @@ Nothing of note here, it just checks the statement structure against the MOM pro
 ### Resolver 📚
 This is the only service subscribed to `resolve-pending`.
 
-This will check if the statements `object.id` is relevant to something in the enclave's Experience Index.
+This will check if the statement's `object.id` is relevant to something in the enclave's Experience Index.
 
 ### Scheduler 📅
 Reads from `resolved-xapi`.
