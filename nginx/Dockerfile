@@ -1,4 +1,4 @@
-FROM cgr.dev/chainguard/nginx
+FROM cgr.dev/chainguard/nginx:latest
 
 ARG HOSTNAME
 
